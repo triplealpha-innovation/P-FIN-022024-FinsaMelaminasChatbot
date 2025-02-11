@@ -89,8 +89,9 @@
         method: 'GET',
         headers: {
           'Accept': 'application/json',
+          'X-API-KEY': 
         }
-      });
+});
       
       if (!response.ok) {
         throw new Error(`Error HTTP: ${response.status}`);

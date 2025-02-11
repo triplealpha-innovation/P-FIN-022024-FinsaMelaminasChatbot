@@ -13,6 +13,7 @@ Responsabilidades principales:
 import os
 
 DOCS_API_KEY = os.environ.get('DOCS_API_KEY')
+X_API_KEY = os.environ.get('X_API_KEY')
 
 API_PREFIX: str = "/api"
 VERSION: str = "1.0.0"

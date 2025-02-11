@@ -5,10 +5,11 @@ from core.exceptions import exception_handler, http_exception_handler
 from services.limiter import limiter
 
 from starlette.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import JSONResponse, RedirectResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from fastapi.security.api_key import APIKeyHeader
 
 app = FastAPI(
     title=config.PROJECT_NAME,
@@ -48,6 +49,10 @@ async def https_redirect(request: Request, call_next):
 # ----------------------------------------------------------------
 # Protege /docs y /redoc con api_key
 # ----------------------------------------------------------------
+# Definir el encabezado para la API Key
+
+api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
+
 @app.middleware("http")
 async def check_api_key(request: Request, call_next):
     if request.url.path in ["/docs", "/redoc"]:
@@ -61,6 +66,12 @@ async def check_api_key(request: Request, call_next):
     response = await call_next(request)
     return response
 
+# Función para validar la API Key para endpoints
+async def validate_api_key(api_key: str = Depends(api_key_header)):
+    if api_key is None or api_key != config.X_API_KEY:
+        raise HTTPException(status_code=401, detail="API Key inválida o no proporcionada.")
+    return api_key
+
 # ----------------------------------------------------------------
 # Manejo de excepciones
 # ----------------------------------------------------------------
@@ -72,9 +83,12 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 # ----------------------------------------------------------------
 @app.get("/process_question/")
 @limiter.limit("5/minute")
-async def process_question(question: str, request: Request = None):
+async def process_question(
+    question: str, 
+    request: Request, 
+    api_key: str = Depends(validate_api_key)  # 🔒 Protección con API Key
+):
     try:
-        # Llamamos al workflow con los datos de la petición
         result = app_workflow.invoke({"question": question, "attempts": 0})
         return {"result": result}
     except Exception as e:
