@@ -1,18 +1,37 @@
-<div class="spinner"></div>
+<script lang="ts">
+</script>
+
+<div class="typing-indicator">
+  <span></span>
+  <span></span>
+  <span></span>
+</div>
 
 <style>
-  .spinner {
-    width: 40px;
-    height: 40px;
-    margin: 1rem auto;
-    border: 3px solid #f1f1f1;
-    border-top: 3px solid #646cff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  .typing-indicator {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    width: fit-content;
+    background: #f0f0f0;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    margin: 0.75rem 0;
   }
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  .typing-indicator span {
+    width: 0.5rem;
+    height: 0.5rem;
+    background: #a0a0a0;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out;
+  }
+
+  .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+  .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-0.5rem); }
   }
 </style>
