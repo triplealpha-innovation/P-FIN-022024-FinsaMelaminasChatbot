@@ -1,0 +1,35 @@
+FROM python:3.12.2-slim
+
+LABEL manteiner = "jkniffki@triplealpha.in"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100 \
+    VIRTUAL_ENV=/usr/local \
+    TZ="Europe/Madrid"
+
+WORKDIR /app/
+
+COPY . .
+
+RUN pip install uv==0.1.29
+RUN uv pip install -r requirements.txt
+
+RUN apt-get update && apt-get install -y dos2unix && \
+    dos2unix /app/init_container.sh && \
+    chmod +x /app/init_container.sh 
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends dialog \
+    && apt-get install -y --no-install-recommends openssh-server \
+    && echo "root:Docker!" | chpasswd \
+    && cd /etc/ssh/ \
+    && ssh-keygen -A
+
+COPY sshd_config /etc/ssh/
+
+EXPOSE 80 2222 8910
+
+ENTRYPOINT ["bash", "init_container.sh" ]
