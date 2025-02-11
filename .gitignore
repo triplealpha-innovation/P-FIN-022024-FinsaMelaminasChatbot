@@ -151,7 +151,6 @@ dmypy.json
 trash/
 *.csv
 configtrash.ini
-*.ipynb
 *.ps1
 
 .venv-chatbot-finsa/

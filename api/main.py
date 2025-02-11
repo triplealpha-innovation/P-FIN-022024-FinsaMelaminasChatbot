@@ -72,7 +72,7 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 # ----------------------------------------------------------------
 @app.get("/process_question/")
 @limiter.limit("5/minute")
-async def process_question(question: str, request: Request):
+async def process_question(question: str, request: Request = None):
     try:
         # Llamamos al workflow con los datos de la petición
         result = app_workflow.invoke({"question": question, "attempts": 0})

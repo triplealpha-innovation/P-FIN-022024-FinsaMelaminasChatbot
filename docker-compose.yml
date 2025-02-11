@@ -1,0 +1,32 @@
+networks:
+  red-chatbot-finsa:
+    name: red-chatbot-finsa
+
+
+services:
+  front-chatbot-finsa:
+    container_name: front-chatbot-finsa
+    image: acr-finsa.azurecr.io/chatbot-finsa:latest
+    build:
+      context: ./app/front
+      dockerfile: dockerfile
+    ports:
+      - "80:4173"
+    networks:
+      - red-chatbot-finsa
+
+  api-chatbot-finsa:
+    container_name: api-chatbot-finsa
+    image: acr-chatbot-finsa.azurecr.io/apichatbot-finsa:latest
+    build:
+      context: ./api/
+      dockerfile: dockerfile
+    env_file:
+      - ./api/.env
+    ports:
+      - 8910:8910
+    networks:
+      - red-chatbot-finsa
+    volumes:
+      - ./api:/app
+

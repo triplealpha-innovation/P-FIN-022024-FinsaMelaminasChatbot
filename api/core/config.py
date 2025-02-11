@@ -16,7 +16,7 @@ DOCS_API_KEY = os.environ.get('DOCS_API_KEY')
 
 API_PREFIX: str = "/api"
 VERSION: str = "1.0.0"
-PROJECT_NAME: str = "API Chatobot Finsa"
+PROJECT_NAME: str = "API Chatbot Finsa"
 DEBUG: bool = False
 
 # Base de datos producción
