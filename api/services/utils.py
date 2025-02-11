@@ -45,8 +45,8 @@ def check_relevance(state: AgentState, config: RunnableConfig):
     )
     llm = AzureChatOpenAI(
         temperature=0.0,
-        model="gpt-35-turbo-16k",  # Reemplaza con el nombre del modelo en tu configuración de Azure
-        deployment_name="gpt-35-turbo-16k",  # Nombre del modelo que has desplegado en Azure
+        model="gpt-35-turbo-16k",  
+        deployment_name="gpt-35-turbo-16k",
         openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         openai_api_version="2024-10-21"
@@ -69,6 +69,10 @@ def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
     Provide only the SQL query without any explanations. Alias columns appropriately to match the expected keys in the result.
 
     For example, alias 'food.name' as 'food_name' and 'food.price' as 'price'.
+
+    Select only the relevant fields to generate the response.
+    
+    When performing a SELECT *, make the necessary joins to retrieve the corresponding descriptions and avoid returning ID fields.
     """.format(schema=schema)
     convert_prompt = ChatPromptTemplate.from_messages(
         [
@@ -78,8 +82,8 @@ def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
     )
     llm = AzureChatOpenAI(
         temperature=0.0,
-        model="gpt-35-turbo-16k",  # Reemplaza con el nombre del modelo en tu configuración de Azure
-        deployment_name="gpt-35-turbo-16k",  # Nombre del modelo que has desplegado en Azure
+        model="gpt-35-turbo-16k", 
+        deployment_name="gpt-35-turbo-16k",  
         openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         openai_api_version="2024-10-21"
@@ -91,39 +95,6 @@ def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
     print(f"Generated SQL query: {state.sql_query}")
     return state
 
-# def execute_sql(state: AgentState):
-#     sql_query = state.sql_query.strip()
-#     session = SessionLocal()
-#     print(f"Executing SQL query: {sql_query}")
-#     try:
-#         result = session.execute(text(sql_query))
-#         if sql_query.lower().startswith("select"):
-#             rows = result.fetchall()
-#             columns = result.keys()
-#             if rows:
-#                 header = ", ".join(columns)
-#                 state.query_rows = [dict(zip(columns, row)) for row in rows]
-#                 print(f"Raw SQL Query Result: {state.query_rows}")
-#                 # Format the result for readability
-#                 formatted_result = state.query_rows
-#             else:
-#                 state.query_rows= []
-#                 formatted_result = "No results found."
-#             state.query_result= formatted_result
-#             state.sql_error= False
-#             print("SQL SELECT query executed successfully.")
-#         else:
-#             session.commit()
-#             state.query_result= "The action has been successfully completed."
-#             state.sql_error= False
-#             print("SQL command executed successfully.")
-#     except Exception as e:
-#         state.query_result= f"Error executing SQL query: {str(e)}"
-#         state.sql_error= True
-#         print(f"Error executing SQL query: {str(e)}")
-#     finally:
-#         session.close()
-#     return state
 
 def execute_sql(state: AgentState):
     sql_query = state.sql_query.strip()
@@ -157,12 +128,16 @@ def execute_sql(state: AgentState):
             print("SQL SELECT query executed successfully.")
         else:
             session.commit()
-            state.query_result = "The action has been successfully completed."
+            state.query_result = {
+                "content": "The action has been successfully completed."
+            }
             state.sql_error = False
             print("SQL command executed successfully.")
 
     except Exception as e:
-        state.query_result = f"Error executing SQL query: {str(e)}"
+        state.query_result = {
+                "content": f"Error executing SQL query: {str(e)}"
+            }
         state.sql_error = True
         print(f"Error executing SQL query: {str(e)}")
     
@@ -173,13 +148,16 @@ def execute_sql(state: AgentState):
 
 def generate_human_readable_answer(state: AgentState):
     # Generar un mensaje con IA para interpretar los datos
-    natural_language_prompt = f"Proporciona una respuesta en lenguaje natural de los siguientes datos: {state.query_result}"
-                
+    natural_language_prompt = f"""
+        Proporciona una respuesta en lenguaje natural de los siguientes datos: {state.query_result}.  
+        Si hay una columna cuyo nombre comienza con 'id_' y existe otra columna que comienza con 'descripcion_', usa la información de 'descripcion_' en la respuesta en lugar de referirte al identificador.  
+        No menciones los nombres de las columnas tal como están en la base de datos; exprésalos en lenguaje natural.
+    """                
     # Usar el modelo para generar el resumen
     language_model = AzureChatOpenAI(
                     temperature=0.5,
-                    model="gpt-35-turbo-16k",  # Modelo de Azure para respuestas naturales
-                    deployment_name="gpt-35-turbo-16k",  # Modelo desplegado
+                    model="gpt-35-turbo-16k",  
+                    deployment_name="gpt-35-turbo-16k", 
                     openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
                     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
                     openai_api_version="2024-10-21"
@@ -187,7 +165,7 @@ def generate_human_readable_answer(state: AgentState):
                 
     # Asegurarnos de pasar un prompt como string en vez de un diccionario
     natural_language_response = language_model.invoke(natural_language_prompt)
-    state.query_result= natural_language_response
+    state.query_result = natural_language_response
     # Acceder al contenido del mensaje generado por IA
     content = natural_language_response.content
 
@@ -214,8 +192,8 @@ def regenerate_query(state: AgentState):
     )
     llm = AzureChatOpenAI(
         temperature=0.0,
-        model="gpt-35-turbo-16k",  # Reemplaza con el nombre del modelo en tu configuración de Azure
-        deployment_name="gpt-35-turbo-16k",  # Nombre del modelo que has desplegado en Azure
+        model="gpt-35-turbo-16k", 
+        deployment_name="gpt-35-turbo-16k", 
         openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         openai_api_version="2024-10-21",
@@ -229,11 +207,15 @@ def regenerate_query(state: AgentState):
     return state
 
 def alert_not_relevant_results(state: AgentState):
-    state.query_result= "No existen resultados para la búsqueda. Inténtelo de nuevo."
+    state.query_result = {
+        "content": "No existen resultados para la búsqueda. Haga una pregunta más precisa, por favor."
+    }
     return state
 
 def end_max_iterations(state: AgentState):
-    state.query_result= "Please try again."
+    state.query_result = {
+        "content": "No existen resultados para la búsqueda. Haga una pregunta más precisa, por favor."
+    }
     print("Maximum attempts reached. Ending the workflow.")
     return state
 

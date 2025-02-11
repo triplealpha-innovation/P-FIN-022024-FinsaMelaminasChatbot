@@ -4,7 +4,7 @@
 
 <div class="avatar {size}">
   <img 
-    src="/img/virtual-assistant.gif" 
+    src="/img/chat-bot (1).gif" 
     alt="Robot animated icon"
     class="robot-gif"
   />
