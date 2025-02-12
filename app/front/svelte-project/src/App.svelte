@@ -4,6 +4,7 @@
   import ChatInput from './lib/ChatInput.svelte';
   import LoadingSpinner from './lib/LoadingSpinner.svelte';
   import ChatbotAvatar from './lib/ChatbotAvatar.svelte';
+  import { v4 as uuidv4 } from 'uuid';
 
   interface Message {
     text: string;
@@ -27,6 +28,7 @@
     }, 3000);
   });
 
+  // Inicializa el historial de mensajes
   let messages: Message[] = [
     {
       text: "¡Hola! Estoy aquí para ayudarte, hazme una pregunta",
@@ -38,6 +40,18 @@
   let errorMessage = '';
   let requestCount = 0;
   let lastRequestTime = 0;
+  let uuid_sesion: string;
+
+  onMount(() => {
+    // Siempre que se recargue la pestaña, eliminamos el uuid_sesion anterior y generamos uno nuevo.
+    sessionStorage.removeItem('uuid_sesion');
+  
+    // Generamos un nuevo uuid_sesion
+    uuid_sesion = uuidv4();
+  
+    // Guardamos el nuevo uuid_sesion en sessionStorage
+    sessionStorage.setItem('uuid_sesion', uuid_sesion);
+  });
 
   function getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
@@ -85,14 +99,15 @@
       isLoading = true;
       errorMessage = '';
 
-      const response = await fetch(`${API_URL}/process_question/?question=${encodeURIComponent(question)}`, {
+      // Solicita una respuesta usando el uuid_sesion
+      const response = await fetch(`${API_URL}/process_question/?question=${encodeURIComponent(question)}&uuid_sesion=${uuid_sesion}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'X-API-KEY': 
+          'X-API-KEY': import.meta.env.VITE_X_API_KEY
         }
-});
-      
+      });
+
       if (!response.ok) {
         throw new Error(`Error HTTP: ${response.status}`);
       }

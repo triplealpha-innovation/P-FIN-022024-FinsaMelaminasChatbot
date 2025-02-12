@@ -16,7 +16,7 @@
   <input
     type="text"
     bind:value={message}
-    placeholder="Type your message..."
+    placeholder="Escribe una pregunta..."
     class="chat-input"
   />
   <button type="submit" class="send-button" disabled={!message.trim()}>

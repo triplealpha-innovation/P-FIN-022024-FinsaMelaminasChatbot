@@ -86,10 +86,14 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 async def process_question(
     question: str, 
     request: Request, 
+    uuid_sesion: str = None,  # Agregar uuid_sesion como parámetro de la URL
     api_key: str = Depends(validate_api_key)  # 🔒 Protección con API Key
 ):
     try:
-        result = app_workflow.invoke({"question": question, "attempts": 0})
+        # Llamada al flujo de trabajo, incluyendo uuid_sesion
+        result = app_workflow.invoke({"question": question, "uuid_sesion": uuid_sesion, "attempts": 0})
         return {"result": result}
+    except RateLimitExceeded as e:
+        raise HTTPException(status_code=429, detail="Límite de peticiones excedido, por favor espera un momento.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")

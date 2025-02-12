@@ -35,7 +35,7 @@
     padding: 0.875rem 1.125rem;
     border-radius: 18px;
     word-wrap: break-word;
-    font-size: 0.9375rem;
+    font-size: 0.8375rem;
     line-height: 1.5;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }

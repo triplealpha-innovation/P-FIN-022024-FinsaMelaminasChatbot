@@ -7,6 +7,7 @@ class UserInput(BaseModel):
 
 class AgentState(BaseModel):
     question: str
+    uuid_sesion: str
     sql_query: Optional[str] = None
     query_result: Optional[Any] = None
     query_rows: Optional[List[Dict[str, Any]]] = None

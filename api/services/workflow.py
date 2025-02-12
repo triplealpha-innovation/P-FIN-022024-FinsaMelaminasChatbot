@@ -49,7 +49,7 @@ workflow.add_conditional_edges(
     check_attempts_router,
     {
         "convert_to_sql": "convert_to_sql",
-        "max_iterations": "end_max_iterations",
+        "end_max_iterations": "end_max_iterations",
     },
 )
 
