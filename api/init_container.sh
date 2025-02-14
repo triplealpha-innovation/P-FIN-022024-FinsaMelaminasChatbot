@@ -8,5 +8,5 @@ if [ "$APP_ENV" = "production" ]; then
     exec gunicorn main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:80 --workers $NUM_WORKERS
 else
     echo "Iniciando uvicorn chatbot Finsa en modo desarrollo con uvicorn............"
-    exec uvicorn main:app --reload --host 0.0.0.0 --port 8910
+    exec uvicorn main:app --reload --host 0.0.0.0 --port 80
 fi
