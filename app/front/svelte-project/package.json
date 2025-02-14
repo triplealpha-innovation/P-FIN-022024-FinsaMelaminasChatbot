@@ -19,6 +19,6 @@
     "vite": "^5.4.2"
   },
   "dependencies": {
-    "uuid": "^9.0.0"
+    "microsoft-cognitiveservices-speech-sdk": "^1.35.0"
   }
 }

@@ -65,7 +65,10 @@ def check_relevance(state: AgentState, config: RunnableConfig):
 
     Respond with only "relevant" or "not_relevant".
     
-    "Orden Trabajo is also referred to as OT."
+    The database is designed to manage Work Orders (OT) for maintenance or repair, and their relationship with equipment, suppliers, operations, and other workflow elements. 
+
+    "Estructura principal: Centro, Empresa, Línea y Equipos representan ubicaciones operativas (centros, líneas de producción) y los equipos involucrados en las OT. Orden de Trabajo (OT) es el núcleo del sistema, vinculada a actividades de mantenimiento, tipos de orden, prioridad y equipos asignados. Operaciones y Mano de Obra: Operaciones son pasos individuales dentro de una OT, incluyendo fechas, tiempos y la mano de obra involucrada. Mano de Obra Notificada detalla los trabajadores o proveedores asignados a las operaciones. Costos y Fallos: OT Coste incluye costos de mano de obra, materiales y equipos. Fallos registran errores o problemas asociados a una OT. Estados: Estado del Sistema indica el estado de las OT y operaciones. Estado del Usuario refleja el progreso de la OT (pendiente, en curso, completada). Proveedores y Puestos de Trabajo: Proveedor de Mano de Obra gestiona a los proveedores de servicios. Puesto de Trabajo define a los responsables de ejecutar tareas en las OT."
+
 
     """.format(schema=schema)    
     # Construir el prompt, incluyendo el historial de la sesión
@@ -113,13 +116,19 @@ def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
 
     For example, alias 'food.name' as 'food_name' and 'food.price' as 'price'. 
 
-    Select only the relevant fields to generate the response.
-
-    When performing a SELECT *, make the necessary joins to retrieve the corresponding descriptions and avoid returning ID fields.
-
-    "When you need to search for text fields, always use LIKE. For example, DO NOT USE this: SELECT id_linea FROM linea WHERE descripcion = 'plastificados III', but instead use this: SELECT id_linea FROM linea WHERE descripcion ILIKE '%plastificados III%'."
+        
+    The database is designed to manage Work Orders (OT) for maintenance or repair, and their relationship with equipment, suppliers, operations, and other workflow elements. 
     
-    "Orden Trabajo is also referred to as OT."
+    Estructura principal: Centro, Empresa, Línea y Equipos representan ubicaciones operativas (centros, líneas de producción) y los equipos involucrados en las OT. Orden de Trabajo (OT) es el núcleo del sistema, vinculada a actividades de mantenimiento, tipos de orden, prioridad y equipos asignados. Operaciones y Mano de Obra: Operaciones son pasos individuales dentro de una OT, incluyendo fechas, tiempos y la mano de obra involucrada. Mano de Obra Notificada detalla los trabajadores o proveedores asignados a las operaciones. Costos y Fallos: OT Coste incluye costos de mano de obra, materiales y equipos. Fallos registran errores o problemas asociados a una OT. Estados: Estado del Sistema indica el estado de las OT y operaciones. Estado del Usuario refleja el progreso de la OT (pendiente, en curso, completada). Proveedores y Puestos de Trabajo: Proveedor de Mano de Obra gestiona a los proveedores de servicios. Puesto de Trabajo define a los responsables de ejecutar tareas en las OT.
+
+    Select only the relevant fields to generate the response.
+    
+    When you are asked for data from a table with many fields, return only the description and one date, unless they specify which fields they want. For example, for orden trabajo: descripcion y fecha_creacion.
+
+    For any record in a table, never identify it by the id. Always do a JOIN to get the description.    
+    
+    When you need to search for text fields, always use LIKE. For example, DO NOT USE this: SELECT id_linea FROM linea WHERE descripcion = 'plastificados III', but instead use this: SELECT id_linea FROM linea WHERE descripcion ILIKE '%plastificados III%'.
+    
     """.format(schema=schema)
 
     # Construir el prompt, incluyendo el historial de la sesión
@@ -202,10 +211,10 @@ def execute_sql(state: AgentState):
                 formatted_result = "No results found."
             
             # Verificar la longitud de la respuesta
-            if len(str(formatted_result)) > 500:
-                print("Result exceeds 500 characters. Redirecting to regenerate_query.")
+            if len(str(formatted_result)) > 1000:
+                print("Result exceeds 1000 characters. Redirecting to regenerate_query.")
                 state.query_result = {
-                    "content": "Result exceeds 500 characters. Redirecting to regenerate_query."
+                    "content": "Result exceeds 1000 characters. Redirecting to regenerate_query."
                 }
                 state.sql_error = True
                 return state
@@ -237,8 +246,8 @@ def execute_sql(state: AgentState):
 def generate_human_readable_answer(state: AgentState):
     print("generate_human_readable_answer")
     print(state.query_result)
-    # Comprobar si la respuesta generada excede los 500 caracteres
-    if not state.query_result or len(state.query_result) > 500 or len(state.query_result) == 0:
+    # Comprobar si la respuesta generada excede los 1000 caracteres
+    if not state.query_result or len(state.query_result) > 1000 or len(state.query_result) == 0:
         # Si la consulta no tiene resultados o es demasiado larga, asignamos el mensaje predeterminado
         state.query_result = "No existen resultados para la búsqueda o es demasiado larga la respuesta. Haga una pregunta más precisa, por favor."
         return state

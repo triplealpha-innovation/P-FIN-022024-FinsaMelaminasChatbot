@@ -104,7 +104,7 @@
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'X-API-KEY': import.meta.env.VITE_X_API_KEY
+          'X-API-KEY': 'QjRfzpjYFAzBQxsJkhnk6j3zgbZlkw7KqYAfKu5aAE6c5BheuWt4XzPcOX6YGLJzeejlAVUld1jwBHEbjBm8Y9g7Oy4E7kuDeVAqdz2JODyNovylpyYtNfC5oEGCg5Jw'
         }
       });
 
@@ -144,6 +144,11 @@
         <span class="header-title">Asistente AI</span>
         <span class="header-status">Online</span>
       </div>
+      <img 
+        src="https://static.construible.es/media/2020/09/Logo-Finsa.png" 
+        alt="Finsa Logo" 
+        class="finsa-logo"
+      />
     </div>
   </header>
 
@@ -229,6 +234,12 @@
     height: 6px;
     background: #22c55e;
     border-radius: 50%;
+  }
+
+  .finsa-logo {
+    height: 24px;
+    margin-left: auto;
+    object-fit: contain;
   }
 
   .welcome-icon {
