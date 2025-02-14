@@ -1,0 +1,52 @@
+name: Build and deploy container app to Azure Web App - app-dev-apifinsachatbot
+
+on:
+  push:
+      branches:
+          - main
+      paths:
+          - 'api/**'
+          
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: 'ubuntu-latest'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to registry
+      uses: docker/login-action@v3
+      with:
+        registry: https://acr-dev-corp-finsa.azurecr.io/
+        username: ${{ secrets.AzureAppService_ContainerUsername_71016a507d2240edb694495e1d8de384 }}
+        password: ${{ secrets.AzureAppService_ContainerPassword_98c127812ba84c7c9fffc952ce03944c }}
+
+    - name: Build and push container image to registry
+      uses: docker/build-push-action@v5
+      with:
+        context: ./api
+        push: true
+        tags: acr-dev-corp-finsa.azurecr.io/apifinsachatbot:${{ github.sha }}
+        file: ./api/dockerfile
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+    - name: Deploy to Azure Web App
+      id: deploy-to-webapp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'app-dev-apifinsachatbot'
+        slot-name: 'production'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_15c16a18cf654878932d909afaf3880e }}
+        images: 'acr-dev-corp-finsa.azurecr.io/apifinsachatbot:${{ github.sha }}'
