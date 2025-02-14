@@ -19,7 +19,7 @@
     };
   }
 
-  const API_URL = 'http://localhost:8910';
+  const API_URL = 'https://app-dev-api-chatbot-finsa-b0d0e5gfhugyemfe.westeurope-01.azurewebsites.net';
   let showWelcomeIcon = true;
 
   onMount(() => {

@@ -22,16 +22,16 @@ jobs:
     - name: Log in to registry
       uses: docker/login-action@v3
       with:
-        registry: https://acr-dev-corp-finsa.azurecr.io/
-        username: ${{ secrets.AzureAppService_ContainerUsername_71016a507d2240edb694495e1d8de384 }}
-        password: ${{ secrets.AzureAppService_ContainerPassword_98c127812ba84c7c9fffc952ce03944c }}
+        registry: https://acrfinsa.azurecr.io/
+        username: ${{ secrets.AzureAppService_ContainerUsername }}
+        password: ${{ secrets.AzureAppService_ContainerPassword }}
 
     - name: Build and push container image to registry
       uses: docker/build-push-action@v5
       with:
         context: ./app/front
         push: true
-        tags: acr-dev-corp-finsa.azurecr.io/frontfinsachatbot:${{ github.sha }}
+        tags: acrfinsa.azurecr.io/frontfinsachatbot:${{ github.sha }}
         file: ./app/front/dockerfile
         build-args: |
           VITE_X_API_KEY=${{ secrets.VITE_X_API_KEY }}
@@ -48,10 +48,10 @@ jobs:
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'app-dev-frontfinsachatbot'
+        app-name: 'app-dev-front-chatbot-finsa'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_CA55760EF1024C2A85719BC3DA88D02D }}
-        images: 'acr-dev-corp-finsa.azurecr.io/frontfinsachatbot:${{ github.sha }}'
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND }}
+        images: 'acrfinsa.azurecr.io/frontfinsachatbot:${{ github.sha }}'
 
     env:
       VITE_X_API_KEY:  ${{ secrets.VITE_X_API_KEY }}
