@@ -15,18 +15,63 @@ def get_session_history(uuid_sesion: str) -> list:
     Recupera el historial de la sesión basado en el uuid_sesion.
     Si no existe, inicializa un historial vacío.
     """
-    # Aquí puedes recuperar el historial desde la base de datos o almacenamiento en memoria
-    # Por ejemplo, utilizando una base de datos o un diccionario en memoria
-    session_history = session_storage.get(uuid_sesion, [])
-    return session_history
+    # Recupera el historial desde el diccionario anidado
+    session_data = session_storage.get(uuid_sesion, {})
+    return session_data.get("history", [])
+
+def get_session_context(uuid_sesion: str) -> list:
+    """
+    Recupera el contexto de la sesión basado en el uuid_sesion.
+    Si no existe, inicializa un historial vacío.
+    """
+    # Recupera el historial desde el diccionario anidado
+    session_data = session_storage.get(uuid_sesion, {})
+    return session_data.get("context", [])
 
 def save_session_history(uuid_sesion: str, session_history: list):
     """
-    Guarda el historial de la sesión en la base de datos o almacenamiento.
+    Guarda el historial de la sesión en el almacenamiento.
     """
-    # Aquí puedes guardar el historial en la base de datos o en memoria
-    # Por ejemplo, utilizando una base de datos o un diccionario en memoria
-    session_storage[uuid_sesion] = session_history
+    # Si no existe la sesión, se inicializa con estructura de diccionario
+    if uuid_sesion not in session_storage:
+        session_storage[uuid_sesion] = {"history": [], "context": []}
+    
+    # Se actualiza solo el historial
+    session_storage[uuid_sesion]["history"] = session_history
+
+def save_context(params: dict):
+    """
+    Añade un nuevo contexto al historial de la sesión sin sobreescribir el anterior.
+    
+    Parámetros:
+        - params (dict): Diccionario que incluye:
+            - "context": El texto a añadir al historial.
+            - "uuid_sesion": El identificador único de la sesión.
+            - "attempts": Número de intentos (no utilizado en este método pero útil para lógica adicional).
+    
+    Retorno:
+        - dict: Confirmación de la actualización del historial.
+    """
+    context = params.get("context", "")
+    uuid_sesion = params.get("uuid_sesion", "")
+    
+    # Verifica si ya existe un diccionario para la sesión
+    if uuid_sesion not in session_storage:
+        # Si no existe, crea un nuevo diccionario para esa sesión
+        session_storage[uuid_sesion] = {"history": [], "context": []}
+    
+    # Añade el nuevo contexto al historial
+    session_storage[uuid_sesion]["history"].append(context)
+    
+    # Añade el contexto al listado de contextos
+    session_storage[uuid_sesion]["context"].append(context)
+    
+    # Guarda el historial actualizado
+    save_session_history(uuid_sesion, session_storage[uuid_sesion]["history"])
+
+    print(session_storage)
+    
+    return {"status": "success", "message": "Context added successfully"}
 
 
 def get_database_schema(engine):
@@ -54,6 +99,8 @@ def check_relevance(state: AgentState, config: RunnableConfig):
 
     # Recuperar o inicializar el historial para esta sesión
     session_history = get_session_history(uuid_sesion)
+    print("Session History")
+    print(session_history)
 
     question = state.question  
     schema = get_database_schema(engine)
@@ -75,13 +122,13 @@ def check_relevance(state: AgentState, config: RunnableConfig):
     check_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", f"Historial: {session_history}, Question: {question}")
+            ("human", f"Question: {question}")
         ]
     )
     llm = AzureChatOpenAI(
         temperature=0.0,
-        model="gpt-35-turbo-16k",  
-        deployment_name="gpt-35-turbo-16k",
+        model="gpt-4o",  
+        deployment_name="gpt-4o",
         openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         openai_api_version="2024-10-21"
@@ -92,6 +139,7 @@ def check_relevance(state: AgentState, config: RunnableConfig):
     state.relevance = relevance.relevance
     print(f"Relevance determined: {state.relevance}")
     return state
+
 
 def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
     print("convert_nl_to_sql")
@@ -106,44 +154,32 @@ def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
     schema = get_database_schema(engine)
 
     print(f"Converting question to SQL")
+
+    # Leer el contexto desde el archivo txt con una ruta absoluta
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    context_file_path = os.path.join(base_dir, "resources", "context.txt")
     
-    # Definir el sistema y el prompt para convertir la pregunta a SQL
-    system = """You are an assistant that converts natural language questions into SQL queries based on the following schema:
 
-    {schema}
-
-    Provide only the SQL query without any explanations. Alias columns appropriately to match the expected keys in the result.
-
-    For example, alias 'food.name' as 'food_name' and 'food.price' as 'price'. 
-
+    with open(context_file_path, "r", encoding="utf-8") as file:
+        context = file.read()
+        system = context.format(schema=schema) 
         
-    The database is designed to manage Work Orders (OT) for maintenance or repair, and their relationship with equipment, suppliers, operations, and other workflow elements. 
-    
-    Estructura principal: Centro, Empresa, Línea y Equipos representan ubicaciones operativas (centros, líneas de producción) y los equipos involucrados en las OT. Orden de Trabajo (OT) es el núcleo del sistema, vinculada a actividades de mantenimiento, tipos de orden, prioridad y equipos asignados. Operaciones y Mano de Obra: Operaciones son pasos individuales dentro de una OT, incluyendo fechas, tiempos y la mano de obra involucrada. Mano de Obra Notificada detalla los trabajadores o proveedores asignados a las operaciones. Costos y Fallos: OT Coste incluye costos de mano de obra, materiales y equipos. Fallos registran errores o problemas asociados a una OT. Estados: Estado del Sistema indica el estado de las OT y operaciones. Estado del Usuario refleja el progreso de la OT (pendiente, en curso, completada). Proveedores y Puestos de Trabajo: Proveedor de Mano de Obra gestiona a los proveedores de servicios. Puesto de Trabajo define a los responsables de ejecutar tareas en las OT.
 
-    Select only the relevant fields to generate the response.
-    
-    When you are asked for data from a table with many fields, return only the description and one date, unless they specify which fields they want. For example, for orden trabajo: descripcion y fecha_creacion.
-
-    For any record in a table, never identify it by the id. Always do a JOIN to get the description.    
-    
-    When you need to search for text fields, always use LIKE. For example, DO NOT USE this: SELECT id_linea FROM linea WHERE descripcion = 'plastificados III', but instead use this: SELECT id_linea FROM linea WHERE descripcion ILIKE '%plastificados III%'.
-    
-    """.format(schema=schema)
-
+    contexto = get_session_context(uuid_sesion)
+    print(contexto)
     # Construir el prompt, incluyendo el historial de la sesión
     convert_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", f"Historial: {session_history}, Question: {question}")
+            ("human", f"Centro y línea de la consulta: {contexto}, Question: {question}")
         ]
     )
 
     # Inicializar el modelo de IA (Azure OpenAI)
     llm = AzureChatOpenAI(
         temperature=0.0,
-        model="gpt-35-turbo-16k", 
-        deployment_name="gpt-35-turbo-16k",  
+        model="gpt-4o", 
+        deployment_name="gpt-4o",  
         openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         openai_api_version="2024-10-21"
@@ -211,13 +247,13 @@ def execute_sql(state: AgentState):
                 formatted_result = "No results found."
             
             # Verificar la longitud de la respuesta
-            if len(str(formatted_result)) > 1000:
-                print("Result exceeds 1000 characters. Redirecting to regenerate_query.")
-                state.query_result = {
-                    "content": "Result exceeds 1000 characters. Redirecting to regenerate_query."
-                }
-                state.sql_error = True
-                return state
+            # if len(str(formatted_result)) > 5000:
+            #     print("Result exceeds 5000 characters. Redirecting to regenerate_query.")
+            #     state.query_result = {
+            #         "content": "Result exceeds 5000 characters. Redirecting to regenerate_query."
+            #     }
+            #     state.sql_error = True
+            #     return state
                 
             state.query_result = formatted_result
             state.sql_error = False
@@ -246,11 +282,11 @@ def execute_sql(state: AgentState):
 def generate_human_readable_answer(state: AgentState):
     print("generate_human_readable_answer")
     print(state.query_result)
-    # Comprobar si la respuesta generada excede los 1000 caracteres
-    if not state.query_result or len(state.query_result) > 1000 or len(state.query_result) == 0:
-        # Si la consulta no tiene resultados o es demasiado larga, asignamos el mensaje predeterminado
-        state.query_result = "No existen resultados para la búsqueda o es demasiado larga la respuesta. Haga una pregunta más precisa, por favor."
-        return state
+    # Comprobar si la respuesta generada excede los 5000 caracteres
+    # if not state.query_result or len(state.query_result) > 5000 or len(state.query_result) == 0:
+    #     # Si la consulta no tiene resultados o es demasiado larga, asignamos el mensaje predeterminado
+    #     state.query_result = "No existen resultados para la búsqueda o es demasiado larga la respuesta. Haga una pregunta más precisa, por favor."
+    #     return state
 
     # Generar un mensaje con IA para interpretar los datos
     natural_language_prompt = f"""
@@ -263,8 +299,8 @@ def generate_human_readable_answer(state: AgentState):
     # Usar el modelo para generar el resumen
     language_model = AzureChatOpenAI(
                     temperature=0.5,
-                    model="gpt-35-turbo-16k",  
-                    deployment_name="gpt-35-turbo-16k", 
+                    model="gpt-4o",  
+                    deployment_name="gpt-4o", 
                     openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
                     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
                     openai_api_version="2024-10-21"
@@ -281,9 +317,7 @@ def generate_human_readable_answer(state: AgentState):
     print("=" * 50)  # Separador decorativo
     print(content)  # Imprimir el contenido del mensaje generado
     print("=" * 50)  # Separador decorativo
-    print(state)
     return state
-
 
 def regenerate_query(state: AgentState):
     print("regenerate_query")
@@ -302,8 +336,8 @@ def regenerate_query(state: AgentState):
     )
     llm = AzureChatOpenAI(
         temperature=0.0,
-        model="gpt-35-turbo-16k", 
-        deployment_name="gpt-35-turbo-16k", 
+        model="gpt-4o", 
+        deployment_name="gpt-4o", 
         openai_api_key=os.getenv("AZURE_OPENAI_KEY"),
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         openai_api_version="2024-10-21",
@@ -355,3 +389,4 @@ def execute_sql_router(state: AgentState):
         return "generate_human_readable_answer"
     else:
         return "regenerate_query"
+

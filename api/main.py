@@ -3,6 +3,7 @@ from services.workflow import app_workflow
 from core import config
 from core.exceptions import exception_handler, http_exception_handler
 from services.limiter import limiter
+from services.utils import save_context
 
 from starlette.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request, HTTPException, Depends
@@ -87,11 +88,28 @@ async def process_question(
     question: str, 
     request: Request, 
     uuid_sesion: str = None,  # Agregar uuid_sesion como parámetro de la URL
-    api_key: str = Depends(validate_api_key)  # 🔒 Protección con API Key
+    str = Depends(validate_api_key)  # 🔒 Protección con API Key
 ):
     try:
         # Llamada al flujo de trabajo, incluyendo uuid_sesion
         result = app_workflow.invoke({"question": question, "uuid_sesion": uuid_sesion, "attempts": 0})
+        return {"result": result}
+    except RateLimitExceeded as e:
+        raise HTTPException(status_code=429, detail="Límite de peticiones excedido, por favor espera un momento.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    
+@app.get("/save_context/")
+@limiter.limit("60/minute")
+async def process_question(
+    context: str, 
+    request: Request, 
+    uuid_sesion: str = None,  # Agregar uuid_sesion como parámetro de la URL
+    str = Depends(validate_api_key)  # 🔒 Protección con API Key
+):
+    try:
+        # Llamada al flujo de trabajo, incluyendo uuid_sesion
+        result = save_context({"context": context, "uuid_sesion": uuid_sesion, "attempts": 0})
         return {"result": result}
     except RateLimitExceeded as e:
         raise HTTPException(status_code=429, detail="Límite de peticiones excedido, por favor espera un momento.")
