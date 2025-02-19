@@ -1,7 +1,7 @@
 <script lang="ts">
   export let options: string[];
   export let onSelect: (option: string) => void;
-  export let itemsPerPage = 4;
+  export let itemsPerPage = 8;
 
   let currentPage = 0;
   
@@ -56,7 +56,7 @@
         </div>
       </button>
     {/each}
-    
+
   </div>
   
   {#if totalPages > 1}
@@ -85,7 +85,6 @@
       </button>
     </div>
   {/if}
-  
 </div>
 
 <style>
@@ -102,6 +101,8 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
+    margin: 0 auto;
+    width: 100%;
   }
 
   .option-button {
@@ -233,5 +234,17 @@
 
   .total-pages {
     color: #6b7280;
+  }
+
+  @media (min-width: 1024px) {
+    .grid {
+      grid-template-columns: repeat(4, 1fr);
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .option-button {
+      min-height: 5rem;
+    }
   }
 </style>
