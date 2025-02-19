@@ -99,8 +99,6 @@ def check_relevance(state: AgentState, config: RunnableConfig):
 
     # Recuperar o inicializar el historial para esta sesión
     session_history = get_session_history(uuid_sesion)
-    print("Session History")
-    print(session_history)
 
     question = state.question  
     schema = get_database_schema(engine)
@@ -312,6 +310,7 @@ def generate_human_readable_answer(state: AgentState):
     # Acceder al contenido del mensaje generado por IA
     content = natural_language_response.content
 
+    print(natural_language_response)
     # Usar print con formato
     print("Resultados de la Consulta SQL:\n")
     print("=" * 50)  # Separador decorativo

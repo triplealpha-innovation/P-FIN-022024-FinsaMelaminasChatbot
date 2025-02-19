@@ -270,7 +270,7 @@
 <style>
   .chat-container {
     width: 100%;
-    max-width: 420px;
+    max-width: 96vw;
     height: 90vh;
     margin: 0 auto;
     display: flex;
@@ -416,6 +416,18 @@
       max-width: none;
       border-radius: 0;
       margin: 0;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .chat-container {
+      max-width: 80vw;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .chat-container {
+      max-width: 70vw;
     }
   }
 </style>

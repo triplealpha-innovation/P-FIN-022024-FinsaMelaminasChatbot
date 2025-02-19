@@ -2,6 +2,20 @@
   import ChatbotAvatar from './ChatbotAvatar.svelte';
   export let text: string;
   export let isUser: boolean;
+
+  function formatText(text: string): string {
+    // Decodificar el texto primero para manejar caracteres escapados
+    const decodedText = text.replace(/\\n/g, '\n');
+    
+    // Reemplazar los saltos de línea con <br>
+    const formattedText = decodedText
+      .split('\n')
+      .map(line => line.trim())
+      .join('<br>');
+
+    // Reemplazar el texto en negrita
+    return formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  }
 </script>
 
 <div class="message {isUser ? 'user' : 'bot'}">
@@ -9,7 +23,7 @@
     <ChatbotAvatar size="small" />
   {/if}
   <div class="bubble">
-    {text}
+    {@html formatText(text)}
   </div>
 </div>
 
@@ -50,6 +64,10 @@
     background-color: white;
     color: #1a1a1a;
     border-bottom-left-radius: 4px;
+  }
+
+  .bubble :global(strong) {
+    font-weight: 600;
   }
 
   @keyframes slideIn {
