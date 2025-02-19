@@ -4,11 +4,15 @@
   import ChatInput from './lib/ChatInput.svelte';
   import LoadingSpinner from './lib/LoadingSpinner.svelte';
   import ChatbotAvatar from './lib/ChatbotAvatar.svelte';
+  import SelectionGrid from './lib/SelectionGrid.svelte';
   import { v4 as uuidv4 } from 'uuid';
 
   interface Message {
     text: string;
     isUser: boolean;
+    showOptions?: boolean;
+    options?: string[];
+    onSelect?: (option: string) => void;
   }
 
   interface ChatResponse {
@@ -20,19 +24,35 @@
   }
 
   const API_URL = 'https://app-dev-api-chatbot-finsa-b0d0e5gfhugyemfe.westeurope-01.azurewebsites.net';
-  let showWelcomeIcon = true;
+  let selectedCenter: string | null = null;
+  let selectedLine: string | null = null;
+  let inputEnabled = false;
 
-  onMount(() => {
-    setTimeout(() => {
-      showWelcomeIcon = false;
-    }, 3000);
-  });
+  const centers = ['Santiago', 'Fibranor', 'Cella', 'Todos'];
+  const productionLines = [
+    'Plastificados',
+    'Plastificados I',
+    'Plastificados II',
+    'Plastificados III',
+    'Plastificados IV',
+    'Plastificados V',
+    'Plastificados VI',
+    'Plastificados VII',
+    'Plastificados VIII',
+    'Plastificados IX',
+    'Plastificados X',
+    'Plastificados elementos comunes',
+    'Plastificados (VII-IX) elementos comunes',
+    'Todas'
+  ];
 
-  // Inicializa el historial de mensajes
   let messages: Message[] = [
     {
-      text: "¡Hola! Estoy aquí para ayudarte, hazme una pregunta",
-      isUser: false
+      text: "¿En qué centro estás?",
+      isUser: false,
+      showOptions: true,
+      options: centers,
+      onSelect: handleCenterSelection
     }
   ];
   
@@ -42,14 +62,71 @@
   let lastRequestTime = 0;
   let uuid_sesion: string;
 
+  async function saveContext(context: string) {
+    try {
+      const response = await fetch(`${API_URL}/save_context/?context=${encodeURIComponent(context)}&uuid_sesion=${uuid_sesion}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-API-KEY': 'QjRfzpjYFAzBQxsJkhnk6j3zgbZlkw7KqYAfKu5aAE6c5BheuWt4XzPcOX6YGLJzeejlAVUld1jwBHEbjBm8Y9g7Oy4E7kuDeVAqdz2JODyNovylpyYtNfC5oEGCg5Jw'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error guardando el contexto:', error);
+      throw error;
+    }
+  }
+
+  async function handleCenterSelection(center: string) {
+    try {
+      selectedCenter = center;
+      await saveContext(`Centro seleccionado: ${center}`);
+      
+      messages = [
+        ...messages.slice(0, -1),
+        { text: `Centro seleccionado: ${center}`, isUser: false },
+        {
+          text: "¿Quieres seleccionar alguna línea de producción?",
+          isUser: false,
+          showOptions: true,
+          options: productionLines,
+          onSelect: handleLineSelection
+        }
+      ];
+    } catch (error) {
+      errorMessage = getErrorMessage(error);
+    }
+  }
+
+  async function handleLineSelection(line: string) {
+    try {
+      selectedLine = line;
+      await saveContext(`Línea de producción seleccionada: ${line}`);
+      
+      messages = [
+        ...messages.slice(0, -1),
+        { text: `Línea seleccionada: ${line}`, isUser: false },
+        {
+          text: "¡Hola! Estoy aquí para ayudarte, hazme una pregunta",
+          isUser: false
+        }
+      ];
+      inputEnabled = true;
+    } catch (error) {
+      errorMessage = getErrorMessage(error);
+    }
+  }
+
   onMount(() => {
-    // Siempre que se recargue la pestaña, eliminamos el uuid_sesion anterior y generamos uno nuevo.
     sessionStorage.removeItem('uuid_sesion');
-  
-    // Generamos un nuevo uuid_sesion
     uuid_sesion = uuidv4();
-  
-    // Guardamos el nuevo uuid_sesion en sessionStorage
     sessionStorage.setItem('uuid_sesion', uuid_sesion);
   });
 
@@ -99,7 +176,6 @@
       isLoading = true;
       errorMessage = '';
 
-      // Solicita una respuesta usando el uuid_sesion
       const response = await fetch(`${API_URL}/process_question/?question=${encodeURIComponent(question)}&uuid_sesion=${uuid_sesion}`, {
         method: 'GET',
         headers: {
@@ -139,10 +215,12 @@
 <main class="chat-container">
   <header class="chat-header">
     <div class="header-content">
-      <ChatbotAvatar size="small" />
-      <div class="header-info">
-        <span class="header-title">Asistente AI</span>
-        <span class="header-status">Online</span>
+      <div class="header-left">
+        <ChatbotAvatar size="small" />
+        <div class="header-info">
+          <span class="header-title">Asistente AI</span>
+          <span class="header-status">Online</span>
+        </div>
       </div>
       <img 
         src="https://static.construible.es/media/2020/09/Logo-Finsa.png" 
@@ -152,29 +230,41 @@
     </div>
   </header>
 
-  {#if showWelcomeIcon}
-    <div class="welcome-icon" class:fade-out={!showWelcomeIcon}>
-      <ChatbotAvatar size="large" />
+  <div class="messages-container">
+    <div class="messages">
+      {#each messages as message}
+        <div class="message-wrapper">
+          <ChatMessage text={message.text} isUser={message.isUser} />
+          {#if message.showOptions && message.options && message.onSelect}
+            <SelectionGrid 
+              options={message.options}
+              onSelect={message.onSelect}
+            />
+          {/if}
+          
+        </div>
+      {/each}
+      
+      
+      {#if isLoading}
+        <div class="loading-wrapper">
+          <LoadingSpinner />
+        </div>
+      {/if}
+      
+      
+      {#if errorMessage}
+        <div class="error-message">
+          {errorMessage}
+        </div>
+      {/if}
+      
     </div>
-  {/if}
-
-  <div class="messages">
-    {#each messages as message}
-      <ChatMessage text={message.text} isUser={message.isUser} />
-    {/each}
-    
-    {#if isLoading}
-      <LoadingSpinner />
-    {/if}
-    
-    {#if errorMessage}
-      <div class="error-message">
-        {errorMessage}
-      </div>
-    {/if}
   </div>
   
-  <ChatInput on:send={handleMessage} />
+  <footer class="chat-footer">
+    <ChatInput on:send={handleMessage} disabled={!inputEnabled} />
+  </footer>
 </main>
 
 <style>
@@ -182,7 +272,7 @@
     width: 100%;
     max-width: 420px;
     height: 90vh;
-    margin: 2rem auto;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     background: white;
@@ -198,9 +288,17 @@
     background: white;
     padding: 1.25rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    position: relative;
+    z-index: 10;
   }
 
   .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -238,32 +336,30 @@
 
   .finsa-logo {
     height: 24px;
-    margin-left: auto;
     object-fit: contain;
   }
 
-  .welcome-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(2);
-    z-index: 10;
-    opacity: 1;
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .welcome-icon.fade-out {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0);
-    pointer-events: none;
+  .messages-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #fafafa;
   }
 
   .messages {
-    flex: 1;
+    height: 100%;
     overflow-y: auto;
     padding: 1.25rem;
-    background: #fafafa;
     scroll-behavior: smooth;
+  }
+
+  .message-wrapper {
+    margin-bottom: 1.25rem;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .loading-wrapper {
+    padding: 0.5rem 0;
   }
 
   .messages::-webkit-scrollbar {
@@ -291,8 +387,35 @@
     animation: fadeIn 0.3s ease-out;
   }
 
+  .chat-footer {
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    position: relative;
+    z-index: 10;
+  }
+
+  @keyframes slideIn {
+    from { 
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .chat-container {
+      height: 100vh;
+      max-width: none;
+      border-radius: 0;
+      margin: 0;
+    }
   }
 </style>

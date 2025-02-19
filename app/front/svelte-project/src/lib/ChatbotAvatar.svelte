@@ -4,7 +4,7 @@
 
 <div class="avatar {size}">
   <img 
-    src="/img/speech-bubble.gif" 
+    src="/img/robot (4).png" 
     alt="Robot animated icon"
     class="robot-gif"
   />

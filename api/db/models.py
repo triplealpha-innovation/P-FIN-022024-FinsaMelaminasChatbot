@@ -194,8 +194,6 @@ class OrdenTrabajo(Base):
     id_revision = Column(String, ForeignKey('revision.id_revision', nullable=True))
     id_equipo = Column(String, ForeignKey('equipo.id_equipo', nullable=True))
     fecha_creacion = Column(DateTime)
-    fecha_inicio_limite = Column(DateTime)
-    fecha_fin_limite = Column(DateTime)
     fecha_inicio_real = Column(DateTime, nullable=True)
     fecha_fin_real = Column(DateTime, nullable=True)
     fecha_inicio_real_notificaciones = Column(DateTime, nullable=True)
@@ -204,10 +202,6 @@ class OrdenTrabajo(Base):
     autor = Column(String)
     descripcion = Column(String)
     posicion_mantenimiento = Column(Float, nullable=True)
-    centro_coste_responsable = Column(BigInteger)
-    coste_total_real = Column(Float)
-    coste_total_plan = Column(Float)
-    res_sol_ped = Column(Integer)
     
     tipo_orden = relationship("TipoOrden", backref="ordenes")
     prioridad = relationship("Prioridad", backref="ordenes")
@@ -236,8 +230,6 @@ class Operacion(Base):
     id_orden = Column(BigInteger, ForeignKey('orden_trabajo.id_orden'))
     id_tipo_mano_obra = Column(String, ForeignKey('tipo_mano_obra.id_tipo_mano_obra', nullable=True))
     id_clave_control = Column(String, ForeignKey('clave_control.id_clave_control'))
-    fecha_inicio_limite = Column(DateTime)
-    fecha_fin_limite = Column(DateTime)
     fecha_inicio_real = Column(DateTime, nullable=True)
     fecha_fin_real = Column(DateTime, nullable=True)
     fecha_inicio_real_notificaciones = Column(DateTime, nullable=True)
@@ -245,10 +237,6 @@ class Operacion(Base):
     descripcion = Column(String, nullable=True)
     tiempo = Column(Float)
     tiempo_real = Column(Float)
-    tiempo_real_no_concurrente = Column(Float, nullable=True)
-    tiempo_pronostico = Column(Float)
-    clave_calculo = Column(Integer, nullable=True)
-    ce_be = Column(String, nullable=True)
     
     orden_trabajo = relationship("OrdenTrabajo", backref="operaciones")
     tipo_mano_obra = relationship("TipoManoObra", backref="operaciones")
@@ -266,18 +254,6 @@ class Operario(Base):
     nif = Column(String)
     
     mano_obra_notificada = relationship("ManoObraNotificada", backref="operario")
-
-
-class Parada(Base):
-    __tablename__ = 'parada'
-
-    id_orden = Column(BigInteger, ForeignKey('orden_trabajo.id_orden'), primary_key=True)
-    fecha_inicio = Column(DateTime, primary_key=True)
-    fecha_fin = Column(DateTime)
-    horas = Column(Float)
-    linea = Column(String)
-    
-    orden_trabajo = relationship("OrdenTrabajo", backref="paradas")
 
 
 class Prioridad(Base):
