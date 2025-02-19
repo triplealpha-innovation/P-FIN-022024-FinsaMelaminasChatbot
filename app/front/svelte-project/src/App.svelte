@@ -28,8 +28,9 @@
   let selectedLine: string | null = null;
   let inputEnabled = false;
 
-  const centers = ['Santiago', 'Fibranor', 'Cella', 'Todos'];
+  const centers = ['Todos', 'Santiago', 'Fibranor', 'Cella'];
   const productionLines = [
+    'Todas',
     'Plastificados',
     'Plastificados I',
     'Plastificados II',
@@ -42,8 +43,7 @@
     'Plastificados IX',
     'Plastificados X',
     'Plastificados elementos comunes',
-    'Plastificados (VII-IX) elementos comunes',
-    'Todas'
+    'Plastificados (VII-IX) elementos comunes'
   ];
 
   let messages: Message[] = [

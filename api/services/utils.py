@@ -310,6 +310,7 @@ def generate_human_readable_answer(state: AgentState):
     # Acceder al contenido del mensaje generado por IA
     content = natural_language_response.content
 
+
     print(natural_language_response)
     # Usar print con formato
     print("Resultados de la Consulta SQL:\n")
