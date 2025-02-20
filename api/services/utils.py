@@ -165,6 +165,7 @@ def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
 
     contexto = get_session_context(uuid_sesion)
     print(contexto)
+
     # Construir el prompt, incluyendo el historial de la sesión
     convert_prompt = ChatPromptTemplate.from_messages(
         [
@@ -309,6 +310,7 @@ def generate_human_readable_answer(state: AgentState):
     state.query_result = natural_language_response
     # Acceder al contenido del mensaje generado por IA
     content = natural_language_response.content
+
 
     print(natural_language_response)
     # Usar print con formato
