@@ -165,6 +165,7 @@ def convert_nl_to_sql(state: AgentState, config: RunnableConfig):
 
     contexto = get_session_context(uuid_sesion)
     print(contexto)
+
     # Construir el prompt, incluyendo el historial de la sesión
     convert_prompt = ChatPromptTemplate.from_messages(
         [

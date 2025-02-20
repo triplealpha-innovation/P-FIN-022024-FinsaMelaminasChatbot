@@ -28,6 +28,8 @@
   let selectedLine: string | null = null;
   let inputEnabled = false;
 
+
+
   const centers = ['Todos', 'Santiago', 'Fibranor', 'Cella'];
   const productionLines = [
     'Todas',
